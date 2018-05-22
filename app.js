@@ -1,29 +1,22 @@
 const express = require('express');
 const app = express();
+
 const morgan = require('morgan');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 
 const productRoutes = require('./api/routes/products');
 const orderRoutes = require('./api/routes/orders');
+const userRoutes = require('./api/routes/user');
 
-// Connecting to MongoDB
-mongoose.connect(
-    `mongodb://misha-dev:${
-        process.env.MONGO_ATLAS_PW
-    }@cluster0-shard-00-00-jyden.mongodb.net:27017,cluster0-shard-00-01-jyden.mongodb.net:27017,cluster0-shard-00-02-jyden.mongodb.net:27017/test?ssl=true&replicaSet=Cluster0-shard-0&authSource=admin`
-);
+mongoose.connect(process.env.MONGO_URI);
 
 // Middleware:
 
-// Logging requests to the console
 app.use(morgan('dev'));
 
-// Making 'uploads' directory accessible
 app.use('/uploads', express.static('uploads'));
 
-// Extracting the body of incoming request
-app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 // Handling CORS errors
@@ -46,14 +39,16 @@ app.use((req, res, next) => {
 // Routes which should handle requests
 app.use('/products', productRoutes);
 app.use('/orders', orderRoutes);
+app.use('/user', userRoutes);
 
-// Handling errors
+// Ошибки доступа к не существующим ресурсам
 app.use((req, res, next) => {
     const error = new Error('Not found');
-    error.status = 400;
+    error.status = 404;
     next(error);
 });
 
+// Ошибки связанные с работой сервера
 app.use((error, req, res, next) => {
     res.status(error.status || 500);
     res.json({
